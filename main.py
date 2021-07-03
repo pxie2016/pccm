@@ -1,19 +1,14 @@
-from changepoint import Changepoint
-from data_simulator import DataSimulator
-from model_fitter import ModelFitter
-from model_visualizer import ModelVisualizer
+"""
+"Main" and does not contain class definitions. Sandbox, playground, testing site...
+Whatever name that floats your boat!
+"""
 
-SAMPLE_SIZE = 100
+from control_panel import ControlPanel
 
-# Generate some simulated data for visualization
-ds = DataSimulator(sample_size=SAMPLE_SIZE, lb=0, ub=1, intercept=0, init_slope=0.5, slope_change=2,
-                   true_cp=Changepoint.fixed(0.5, SAMPLE_SIZE),
-                   noise_sd=0.1)
+pccm_instance = ControlPanel()
+pccm_instance.init_ds()
+pccm_instance.init_mf()
+pccm_instance.fit()
+pccm_instance.print_df()
 
-# Fit the model
-mf = ModelFitter(ds.get_df(), curr_cp=Changepoint.fixed(0.9, SAMPLE_SIZE))
-mf.fit()
-
-# Plot the results
-mv = ModelVisualizer(mf)
-mv.plot()
+pccm_instance.plot()

@@ -1,6 +1,5 @@
 import pandas as pd
 import statsmodels.formula.api as smf
-from changepoint import Changepoint
 
 
 class ModelFitter:
@@ -9,13 +8,14 @@ class ModelFitter:
     Muggeo (2003), or Muggeo et al (2014) for details.
     """
 
-    def __init__(self, data: pd.DataFrame, curr_cp: Changepoint, conv_depth: int = 20) -> None:
+    def __init__(self, data: pd.DataFrame, mf_params: dict) -> None:
         # TODO: Iterative model fitting with bootstrap restarting (S. Wood, 2001)
         # Time complexity & relationship with SGD family of minimization algorithms to be explored...
         self.data = data
-        self.curr_cp = curr_cp.value
+        self.curr_cp = mf_params["curr_cp"].value
+        self.br = mf_params["br"]
+        self.conv_depth = mf_params["conv_depth"]
         self.est_cp = None
-        self.conv_depth = conv_depth
 
     def one_rep(self) -> None:
         self.data = self.data.assign(curr_cp=self.curr_cp)
@@ -32,4 +32,7 @@ class ModelFitter:
     def fit(self) -> None:
         for _ in range(self.conv_depth):
             self.one_rep()
-        self.est_cp = self.data["curr_cp"].mean()
+        self.est_cp = self.data["curr_cp"]
+
+    def get_res(self) -> pd.Series:
+        return self.est_cp
