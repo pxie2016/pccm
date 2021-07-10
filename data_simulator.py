@@ -17,8 +17,8 @@ class DataSimulator:
         self._y = [ds_params["intercept"]] * ds_params["sample_size"] + ds_params["init_slope"] * self._x + \
             ds_params["slope_change"] * (self._x > self._true_cp) * (self._x - self._true_cp) + self._noise
         # Collate into a pandas DataFrame only when needed
-        self._df = pd.DataFrame(data=np.column_stack((self._x, self._y)),
-                                columns=['x', 'y'])
+        self.df = pd.DataFrame(data=np.column_stack((self._x, self._y)),
+                               columns=['x', 'y'])
 
     def get_df(self) -> pd.DataFrame:
-        return pd.DataFrame(self._df)
+        return pd.DataFrame(self.df)

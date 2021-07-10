@@ -1,5 +1,4 @@
 from changepoint import Changepoint
-from bootstrapper import Bootstrapper
 from data_simulator import DataSimulator
 from model_fitter import ModelFitter
 from model_visualizer import ModelVisualizer
@@ -16,7 +15,7 @@ class ControlPanel:
     def __init__(self) -> None:
         # The omnipresent, quintessential, and slightly cliche-y dataset, iris
         iris = datasets.load_iris()
-        self._df = pd.DataFrame(iris.data[:, :2])
+        self.df = pd.DataFrame(iris.data[:, :2])
         self.ds, self.mf, self.mv = None, None, None
         self.est_cp = None
         # Some default parameters for the data simulator, if it is ever used
@@ -24,7 +23,8 @@ class ControlPanel:
                           "slope_change": 2, "noise_sd": 0.1}
         self.ds_params["true_cp"] = Changepoint.fixed(0.5, self.ds_params["sample_size"])
         self.mf_params = {"conv_depth": 20, "br": False,
-                          "curr_cp": Changepoint.fixed(0.9, self.ds_params["sample_size"])}
+                          "curr_cp": Changepoint.fixed(0.9, self.ds_params["sample_size"]),
+                          "cov_specific_cp": False, "cov_specific_slope": False}
 
     def init_ds(self) -> None:
         self.ds = DataSimulator(self.ds_params)
@@ -42,4 +42,4 @@ class ControlPanel:
         self.mv.plot()
 
     def print_df(self) -> None:
-        print(self._df)
+        print(self.df)
