@@ -1,4 +1,5 @@
 from bootstrapper import Bootstrapper
+import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 import statsmodels.regression.linear_model as sm_ols
@@ -28,19 +29,32 @@ class ModelFitter:
         # print(res.summary())
 
     def one_rep_br(self) -> None:
+        self.df = self.calc_pre_regression_pseudocovs(self.df)
+        mod = smf.ols(formula='y~x + u_tilde + v_tilde', data=self.df)
+        res = mod.fit()
+        self.df = self.calc_post_regression_pseudocovs(self.df, res)
+        loglik = res.llf
+
         bs = Bootstrapper(self.df)
         df_copies = [self.df.copy()] * bs.num_copies
-        for boot_df in bs.list_of_dfs:
-            i = 0
-            boot_df = self.calc_pre_regression_pseudocovs(boot_df, True)
+        loglik_copies = [0.] * bs.num_copies
+        for i in range(bs.num_copies):
+            boot_df = df_copies[i]
+            boot_df = boot_df.assign(curr_cp=self.curr_cp)
+            boot_df = self.calc_pre_regression_pseudocovs(boot_df)
             boot_mod = smf.ols(formula='y~x + u_tilde + v_tilde', data=boot_df)
             boot_res = boot_mod.fit()
-            boot_df = self.calc_post_regression_pseudocovs(boot_df, boot_res, True)
-            df_copies[i] = df_copies[i].assign(boot_cp=boot_df["curr_cp"])
-            df_copies[i] = self.calc_pre_regression_pseudocovs(df_copies[i])
+            boot_df = self.calc_post_regression_pseudocovs(boot_df, boot_res)
+            df_copies[i] = df_copies[i].assign(curr_cp=boot_df["curr_cp"])
+            df_copies[i] = self.calc_pre_regression_pseudocovs(df_copies[i], True)
             refit_mod = smf.ols(formula='y~x + u_tilde_boot + v_tilde_boot', data=df_copies[i])
-            df_copies[i] = self.calc_post_regression_pseudocovs(df_copies[i], refit_mod, True)
-            # TODO: df_copies[i] needs to remember their log-likelihood values - a wrapper maybe?
+            refit_mod_res = refit_mod.fit()
+            df_copies[i] = self.calc_post_regression_pseudocovs(df_copies[i], refit_mod_res, True)
+            loglik_copies[i] = refit_mod_res.llf
+
+        if loglik < max(loglik_copies):
+            max_index = np.argmax(loglik_copies)
+            self.df = df_copies[max_index]
 
     def fit(self) -> None:
         for _ in range(self.conv_depth):
@@ -58,8 +72,8 @@ class ModelFitter:
             df = df.assign(ind=(df.x > df.curr_cp).astype(int))
             df = df.assign(u_tilde=df.ind * (df.x - df.curr_cp), v_tilde=-df.ind)
         else:
-            df = df.assign(ind_boot=(df.x > df.boot_cp).astype(int))
-            df = df.assign(u_tilde_boot=df.ind_boot * (df.x - df.boot_cp), v_tilde_boot=-df.ind_boot)
+            df = df.assign(ind_boot=(df.x > df.curr_cp).astype(int))
+            df = df.assign(u_tilde_boot=df.ind_boot * (df.x - df.curr_cp), v_tilde_boot=-df.ind_boot)
         return df
 
     @staticmethod

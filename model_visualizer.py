@@ -17,4 +17,5 @@ class ModelVisualizer:
         sns.set_theme()
         sns.relplot(data=self.df, x='x', y='y')
         plt.axvline(x=self.est_cp, c="red")
+        plt.text(x=self.est_cp, y=0., s=str(round(self.est_cp, 5)), c="red", size="medium")
         plt.show()
