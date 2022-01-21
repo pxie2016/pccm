@@ -20,20 +20,18 @@ class ModelFitter:
         self.br = mf_params["br"]
         self.conv_depth = mf_params["conv_depth"]
         self.est_cp = None
+        self.res = None
 
     def one_rep(self) -> None:
         self.df = self.calc_pre_regression_pseudocovs(self.df)
         mod = smf.ols(formula='y~x + u_tilde + v_tilde', data=self.df)
-        res = mod.fit()
-        self.df = self.calc_post_regression_pseudocovs(self.df, res)
+        self.res = mod.fit()
+        self.df = self.calc_post_regression_pseudocovs(self.df, self.res)
         # print(res.summary())
 
     def one_rep_br(self) -> None:
-        self.df = self.calc_pre_regression_pseudocovs(self.df)
-        mod = smf.ols(formula='y~x + u_tilde + v_tilde', data=self.df)
-        res = mod.fit()
-        self.df = self.calc_post_regression_pseudocovs(self.df, res)
-        loglik = res.llf
+        self.one_rep()
+        loglik = self.res.llf
 
         bs = Bootstrapper(self.df)
         df_copies = [self.df.copy()] * bs.num_copies

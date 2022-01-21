@@ -19,10 +19,10 @@ class ControlPanel:
         self.ds, self.mf, self.mv = None, None, None
         self.est_cp = None
         # Some default parameters for the data simulator, if it is ever used
-        self.ds_params = {"sample_size": 200000, "lb": 0, "ub": 1, "intercept": 0, "init_slope": 0.5,
+        self.ds_params = {"sample_size": 5000, "lb": 0, "ub": 1, "intercept": 0, "init_slope": 0.5,
                           "slope_change": 2, "noise_sd": 0.75}
         self.ds_params["true_cp"] = Changepoint.fixed(0.5, self.ds_params["sample_size"])
-        self.mf_params = {"conv_depth": 20, "br": False,
+        self.mf_params = {"conv_depth": 20, "br": True,
                           "curr_cp": Changepoint.fixed(0.9, self.ds_params["sample_size"]),
                           "cov_specific_cp": False, "cov_specific_slope": False}
 
