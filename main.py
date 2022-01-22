@@ -1,6 +1,5 @@
 """
-"Main" and does not contain class definitions. Sandbox, playground, testing site...
-Whatever name that floats your boat!
+Main class of the application. Used for testing purposes.
 """
 
 from control_panel import ControlPanel

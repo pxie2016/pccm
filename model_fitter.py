@@ -1,3 +1,4 @@
+import bootstrapper
 from bootstrapper import Bootstrapper
 import numpy as np
 import pandas as pd
@@ -12,8 +13,6 @@ class ModelFitter:
     """
 
     def __init__(self, df: pd.DataFrame, mf_params: dict) -> None:
-        # TODO: Iterative model fitting with bootstrap restarting (S. Wood, 2001)
-        # Time complexity & relationship with SGD family of minimization algorithms to be explored...
         self.df = df
         self.curr_cp = mf_params["curr_cp"].value
         self.df = self.df.assign(curr_cp=self.curr_cp)
@@ -29,26 +28,14 @@ class ModelFitter:
         self.df = self.calc_post_regression_pseudocovs(self.df, self.res)
         # print(res.summary())
 
-    def one_rep_br(self) -> None:
+    def one_rep_bootstrap(self) -> None:
         self.one_rep()
         loglik = self.res.llf
 
         bs = Bootstrapper(self.df)
         df_copies = [self.df.copy()] * bs.num_copies
         loglik_copies = [0.] * bs.num_copies
-        for i in range(bs.num_copies):
-            boot_df = df_copies[i]
-            boot_df = boot_df.assign(curr_cp=self.curr_cp)
-            boot_df = self.calc_pre_regression_pseudocovs(boot_df)
-            boot_mod = smf.ols(formula='y~x + u_tilde + v_tilde', data=boot_df)
-            boot_res = boot_mod.fit()
-            boot_df = self.calc_post_regression_pseudocovs(boot_df, boot_res)
-            df_copies[i] = df_copies[i].assign(curr_cp=boot_df["curr_cp"])
-            df_copies[i] = self.calc_pre_regression_pseudocovs(df_copies[i], True)
-            refit_mod = smf.ols(formula='y~x + u_tilde_boot + v_tilde_boot', data=df_copies[i])
-            refit_mod_res = refit_mod.fit()
-            df_copies[i] = self.calc_post_regression_pseudocovs(df_copies[i], refit_mod_res, True)
-            loglik_copies[i] = refit_mod_res.llf
+        self.bootstrap_and_refit(bs, df_copies, loglik_copies)
 
         if loglik < max(loglik_copies):
             max_index = np.argmax(loglik_copies)
@@ -56,7 +43,7 @@ class ModelFitter:
 
     def fit(self) -> None:
         for _ in range(self.conv_depth):
-            self.one_rep_br() if self.br else self.one_rep()
+            self.one_rep_bootstrap() if self.br else self.one_rep()
         self.est_cp = self.df["curr_cp"]
 
     def get_res(self) -> pd.Series:
@@ -84,3 +71,18 @@ class ModelFitter:
             df = df.assign(u_tilde_boot=reg_result.params["u_tilde_boot"])
             df.curr_cp += reg_result.params["v_tilde_boot"] / df["u_tilde_boot"]
         return df
+
+    def bootstrap_and_refit(self, bs: Bootstrapper, df_copies: [pd.DataFrame], loglik_copies: [float]) -> None:
+        for i in range(bs.num_copies):
+            boot_df = df_copies[i]
+            boot_df = boot_df.assign(curr_cp=self.curr_cp)
+            boot_df = self.calc_pre_regression_pseudocovs(boot_df)
+            boot_mod = smf.ols(formula='y~x + u_tilde + v_tilde', data=boot_df)
+            boot_res = boot_mod.fit()
+            boot_df = self.calc_post_regression_pseudocovs(boot_df, boot_res)
+            df_copies[i] = df_copies[i].assign(curr_cp=boot_df["curr_cp"])
+            df_copies[i] = self.calc_pre_regression_pseudocovs(df_copies[i], True)
+            refit_mod = smf.ols(formula='y~x + u_tilde_boot + v_tilde_boot', data=df_copies[i])
+            refit_mod_res = refit_mod.fit()
+            df_copies[i] = self.calc_post_regression_pseudocovs(df_copies[i], refit_mod_res, True)
+            loglik_copies[i] = refit_mod_res.llf
