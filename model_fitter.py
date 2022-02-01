@@ -1,9 +1,9 @@
-import bootstrapper
-from bootstrapper import Bootstrapper
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 import statsmodels.regression.linear_model as sm_ols
+
+from bootstrapper import Bootstrapper
 
 
 class ModelFitter:
@@ -71,6 +71,9 @@ class ModelFitter:
             df = df.assign(u_tilde_boot=reg_result.params["u_tilde_boot"])
             df.curr_cp += reg_result.params["v_tilde_boot"] / df["u_tilde_boot"]
         return df
+
+    def build_reg_formula(self) -> str:
+        pass
 
     def bootstrap_and_refit(self, bs: Bootstrapper, df_copies: [pd.DataFrame], loglik_copies: [float]) -> None:
         for i in range(bs.num_copies):

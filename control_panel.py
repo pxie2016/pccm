@@ -26,6 +26,22 @@ class ControlPanel:
                           "curr_cp": Changepoint.fixed(0.9, self.ds_params["sample_size"]),
                           "cov_specific_cp": False, "cov_specific_slope": False}
 
+    """
+    Allows user to set up their own data simulation parameters; merely a setter of self.ds_params for now,
+    but will be more logically sound and user-friendly later
+    """
+
+    def simulator_setup(self, ds_params: dict) -> None:
+        self.ds_params = ds_params
+
+    """
+    Allows user to set up their own model parameters; merely a setter of self.mf_params for now,
+    but will be more logically sound and user-friendly later
+    """
+
+    def model_setup(self, mf_params: dict) -> None:
+        self.mf_params = mf_params
+
     def init_ds(self) -> None:
         self.ds = DataSimulator(self.ds_params)
         self.df = self.ds.get_df()
